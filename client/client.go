@@ -83,7 +83,7 @@ func main() {
 	// create transfer request
 	req := &pbNode.TransferRequest{
 		Sender:   "peer-1",
-		Receiver: "peer-3",
+		Receiver: "peer-4",
 		Amount:   500,
 	}
 

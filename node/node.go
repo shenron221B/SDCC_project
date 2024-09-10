@@ -81,6 +81,7 @@ func (s *NodeServer) VerifyTransaction(ctx context.Context, req *pbNode.Transact
 			s.chandyLamportServer.LocalState = "VerifyTransaction - " + "transaction verified; actual confidence score: " + strconv.Itoa(int(req.ConfidenceScore))
 			s.chandyLamportServer.Version[s.name]++
 			s.chandyLamportServer.SaveStateToFile()
+			s.SendMarkerToOutgoingChannels(s.name)
 		}
 
 		log.Printf("%s calls AnotherVerification on successor: %s", s.name, s.successor)
@@ -100,7 +101,6 @@ func (s *NodeServer) VerifyTransaction(ctx context.Context, req *pbNode.Transact
 
 		client := pbNode.NewNodeClient(conn)
 
-		s.SendMarkerToOutgoingChannels(s.name)
 		// call AnotherVerification on successor
 		resp, err := client.AnotherVerification(ctx, req)
 
@@ -187,9 +187,7 @@ func (s *NodeServer) AnotherVerification(ctx context.Context, req *pbNode.Transa
 		s.chandyLamportServer.LocalState = "AnotherVerification - " + "verifications in progress for request: TransferMoney to " + req.TargetNode + " for " + strconv.Itoa(int(req.Amount)) + "$"
 		s.chandyLamportServer.Version[s.name]++
 		s.chandyLamportServer.SaveStateToFile()
-
 		s.SendMarkerToOutgoingChannels(s.name)
-		// s.chandyLamportServer.RecordIncomingMessage()
 	}
 
 	log.Printf("AnotherVerification -> expected value passed from VerifyTransaction of the confidence score: 1 - actial value: %d", req.ConfidenceScore)
@@ -233,6 +231,29 @@ func (s *NodeServer) AnotherVerification(ctx context.Context, req *pbNode.Transa
 	if s.successor == req.TargetNode {
 		log.Printf("this node is the last one before receiver! Sending amount...")
 		time.Sleep(2 * time.Second)
+
+		peerAddr := s.peers[req.NodeName]
+		conn, err := grpc.Dial(peerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			log.Printf("Failed to connect to peer-1 for approval: %v", err)
+			return &pbNode.TransactionVerificationResponse{Known: false, ConfidenceScore: req.ConfidenceScore}, nil
+		}
+		defer conn.Close()
+
+		client := pbNode.NewNodeClient(conn)
+		approvalReq := &pbNode.ApprovalRequest{
+			Sender:          req.NodeName,
+			Receiver:        req.TargetNode,
+			Amount:          req.Amount,
+			ConfidenceScore: req.ConfidenceScore,
+		}
+
+		approvalResp, err := client.RequestApproval(ctx, approvalReq)
+		if err != nil || !approvalResp.Approved {
+			log.Printf("Approval denied or failed for peer-1: %v", err)
+			return &pbNode.TransactionVerificationResponse{Known: false, ConfidenceScore: req.ConfidenceScore}, nil
+		}
+
 		if req.ConfidenceScore == int32(len(s.peers)-1) {
 			log.Printf("AnotherVerification -> expected value of the confidence score before send the amount: 2 - actual value: %d", req.ConfidenceScore)
 			finalPeerAddr, ok := s.peers[req.TargetNode]
@@ -470,31 +491,6 @@ func (s *NodeServer) SendMarkerToOutgoingChannels(node string) {
 		}
 	}
 }
-
-/*
-func (s *NodeServer) ReceiveMarker(ctx context.Context, msg *pbNode.MarkerMessage) (*pbNode.Empty, error) {
-	// Acquire lock only for critical section
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	log.Printf("%s received marker from %s", s.name, msg.FromNode)
-
-	if !s.chandyLamportServer.SeenMarkers[s.name] {
-		s.chandyLamportServer.SeenMarkerFrom[s.name] = msg.FromNode
-		s.chandyLamportServer.SeenMarkers[s.name] = true
-		s.chandyLamportServer.SeenMarkerForTheFirstTime[s.name] = true
-		s.chandyLamportServer.Recording[s.name] = true
-
-		log.Printf("%s seen the marker for the first time - start recording", s.name)
-	} else {
-		log.Printf("%s has already seen a marker: stop recording on that channel", s.name)
-		s.chandyLamportServer.StopRecordingOnChannel(s.name)
-	}
-
-	return &pbNode.Empty{}, nil
-}
-
-*/
 
 func (s *NodeServer) ReceiveMarker(ctx context.Context, msg *pbNode.MarkerMessage) (*pbNode.Empty, error) {
 	go func() {
