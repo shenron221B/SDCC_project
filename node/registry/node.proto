@@ -1,0 +1,93 @@
+syntax = "proto3";
+
+package node;
+
+option go_package = "./;registry";
+
+service Node {
+  rpc TransferMoney(TransferRequest) returns (TransferResponse);
+  rpc GetBalance(BalanceRequest) returns (BalanceResponse);
+  rpc RequestLoan(LoanRequest) returns (LoanResponse);
+  rpc VerifyTransaction(TransactionVerificationRequest) returns (TransactionVerificationResponse);
+  rpc TransactionReceived(Empty) returns (Empty);
+  rpc ReceiveResponse(TransactionVerificationResponse) returns (Empty);
+  rpc RequestApproval(ApprovalRequest) returns (ApprovalResponse);
+  rpc UpdateBalance(UpdateBalanceRequest) returns (UpdateBalanceResponse);
+  rpc UpdatePeers(NodeListResponse) returns (Empty);
+  rpc ReceiveMarker (MarkerMessage) returns (Empty);
+  rpc AnotherVerification(TransactionVerificationRequest) returns (TransactionVerificationResponse);
+}
+
+message NodeInfo {
+  string name = 1;
+  string address = 2;
+}
+
+message NodeListResponse {
+  repeated NodeInfo nodes = 1;
+}
+
+message MarkerMessage {
+  string FromNode = 1;
+}
+
+message TransferRequest {
+  string sender = 1;
+  string receiver = 2;
+  int32 amount = 3;
+}
+
+message TransferResponse {
+  bool success = 1;
+  int32 confidenceScore = 2;
+}
+
+message BalanceRequest {
+  string name = 1;
+}
+
+message BalanceResponse {
+  int32 balance = 1;
+}
+
+message LoanRequest {
+  string name = 1;
+  int32 amount = 2;
+}
+
+message LoanResponse {
+  bool approved = 1;
+}
+
+message TransactionVerificationRequest {
+  string nodeName = 1;
+  string targetNode = 2;
+  int32 amount = 3;
+  int32 confidence_score = 4;
+}
+
+message TransactionVerificationResponse {
+  bool known = 1;
+  int32 confidence_score = 2;
+}
+
+message ApprovalRequest {
+  string sender = 1;
+  string receiver = 2;
+  int32 amount = 3;
+  int32 confidenceScore = 4;
+}
+
+message ApprovalResponse {
+  bool approved = 1;
+}
+
+message UpdateBalanceRequest {
+  int32 amount = 1;
+}
+
+message UpdateBalanceResponse {
+  bool success = 1;
+}
+
+message Empty {}

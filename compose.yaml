@@ -1,0 +1,51 @@
+version: '3'
+services:
+  service_registry:
+    build:
+      context: .
+      dockerfile: DockerFileSR
+    hostname: service_registry
+    ports:
+      - "50051:50051"
+
+  peer-1:
+    build:
+      context: .
+      dockerfile: DockerFileNode
+    hostname: peer-1
+    environment:
+      - PEER_NAME=peer-1
+    ports:
+      - "50052"
+    depends_on:
+      - service_registry
+    volumes:
+      - ./config.json:/config.json
+
+  peer-2:
+    build:
+      context: .
+      dockerfile: DockerFileNode
+    hostname: peer-2
+    environment:
+      - PEER_NAME=peer-2
+    ports:
+      - "50053"
+    depends_on:
+      - service_registry
+    volumes:
+      - ./config.json:/config.json
+
+  peer-3:
+    build:
+      context: .
+      dockerfile: DockerFileNode
+    hostname: peer-3
+    environment:
+      - PEER_NAME=peer-3
+    ports:
+      - "50054"
+    depends_on:
+      - service_registry
+    volumes:
+      - ./config.json:/config.json

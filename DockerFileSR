@@ -1,0 +1,25 @@
+# Usa una immagine di Go come base
+FROM golang:latest
+
+# Imposta la directory di lavoro all'interno del container
+WORKDIR /SDCC
+
+# Copia il file di dipendenze del modulo e scarica le dipendenze
+COPY ../go.mod ./
+COPY ../go.sum ./
+RUN go mod download
+
+# Copia il codice sorgente nella directory di lavoro del container
+COPY ../server_registry /SDCC/server_registry
+COPY ../node /SDCC/node
+COPY ../Chandy_Lamport /SDCC/Chandy_Lamport
+COPY ../client /SDCC/client
+COPY ../main.go /SDCC/
+COPY ../config.json /SDCC/config.json
+
+USER root
+RUN chmod -R +x /SDCC/node /SDCC/server_registry /SDCC/client
+RUN ls -l /SDCC/node /SDCC/server_registry /SDCC/client
+
+# Comando predefinito per avviare il servizio registry
+CMD ["sh", "-c", "go run main.go -docker registry"]

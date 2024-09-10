@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package server_registry;
+
+option go_package = "./;registry";
+
+service Registry {
+  rpc RegisterNode(RegisterRequest) returns (RegisterResponse);
+  rpc GetNodeAddress(NodeRequest) returns (NodeResponse);
+  rpc GetAllNodes(Empty) returns (NodeListResponse);
+}
+
+message RegisterRequest {
+  string name = 1;
+  string address = 2;
+}
+
+message RegisterResponse {
+  bool success = 1;
+}
+
+message NodeRequest {
+  string name = 1;
+}
+
+message NodeResponse {
+  string address = 1;
+}
+
+message Empty {}
+
+message NodeListResponse {
+  repeated Node nodes = 1;
+}
+
+message Node {
+  string name = 1;
+  string address = 2;
+}

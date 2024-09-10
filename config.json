@@ -1,0 +1,31 @@
+{
+  "localhost": {
+    "service_registry": {
+      "address": "localhost",
+      "port": ":50051"
+    }
+  },
+  "docker": {
+    "service_registry": {
+      "address": "service_registry",
+      "port": ":50051"
+    },
+    "peers": [
+      {
+        "address": "peer-1",
+        "balance": "1600",
+        "port": ":50052"
+      },
+      {
+        "address": "peer-2",
+        "balance": "1200",
+        "port": ":50053"
+      },
+      {
+        "address": "peer-3",
+        "balance": "800",
+        "port": ":50054"
+      }
+    ]
+  }
+}
