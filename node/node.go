@@ -40,13 +40,13 @@ type NodeConfig struct {
 }
 
 // NewNodeServer creates a new NodeServer instance
-func NewNodeServer(name string, balance int32, registryAddress string) *NodeServer {
+func NewNodeServer(name string, balance int32, registryAddress string, cls *chandyLamport.ChandyLamportServer) *NodeServer {
 	ns := &NodeServer{
 		name:                name,
 		balance:             balance,
 		peers:               make(map[string]string),
 		registryAddress:     registryAddress,
-		chandyLamportServer: chandyLamport.NewChandyLamportServer(name),
+		chandyLamportServer: cls,
 	}
 	log.Printf("NodeServer initialized: Name=%s, Balance=%d, RegistryAddress=%s, Peers=%v",
 		name, balance, registryAddress, ns.peers)
@@ -295,8 +295,6 @@ func (s *NodeServer) TransferMoney(ctx context.Context, req *pbNode.TransferRequ
 		return &pbNode.TransferResponse{Success: false}, nil
 	}
 
-	s.chandyLamportServer.IncomingMessageFrom[s.name] = "peer-2/node.Node/RequestApproval"
-
 	log.Printf("Connecting to successor node %s to verify the transaction...", peerAddr)
 	conn, err := grpc.Dial(peerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -304,6 +302,8 @@ func (s *NodeServer) TransferMoney(ctx context.Context, req *pbNode.TransferRequ
 		return &pbNode.TransferResponse{Success: false}, nil
 	}
 	defer conn.Close()
+
+	log.Printf("run is here")
 
 	// start Chandy-Lamport snapshot (this is the initiator process)
 	if !s.chandyLamportServer.SeenMarkers[s.chandyLamportServer.NodeName] {
@@ -338,13 +338,15 @@ func (s *NodeServer) TransferMoney(ctx context.Context, req *pbNode.TransferRequ
 
 	confidenceScore = int(resp.ConfidenceScore)
 
-	log.Printf("Transaction verified - confidence score: %d/%d", confidenceScore, len(s.peers)-2)
+	/*
+		log.Printf("Transaction verified - confidence score: %d/%d", confidenceScore, len(s.peers)-2)
 
-	// no one node know the receiver -> cancel transaction
-	if confidenceScore == 0 {
-		log.Printf("Receiver unknown... transaction cancelled")
-		return &pbNode.TransferResponse{Success: false}, nil
-	}
+		// no one node know the receiver -> cancel transaction
+		if confidenceScore == 0 {
+			log.Printf("Receiver unknown... transaction cancelled")
+			return &pbNode.TransferResponse{Success: false}, nil
+		}
+	*/
 
 	finalPeerAddr, ok := s.peers[req.Receiver]
 	if !ok || finalPeerAddr == "" {
@@ -377,14 +379,13 @@ func (s *NodeServer) TransferMoney(ctx context.Context, req *pbNode.TransferRequ
 }
 
 func (s *NodeServer) RequestApproval(ctx context.Context, req *pbNode.ApprovalRequest) (*pbNode.ApprovalResponse, error) {
-	log.Printf("RequestApproval called on %s by %s for transaction from %s to %s (Amount: %d, Confidence Score: %d)",
-		s.name, req.Sender, req.Sender, req.Receiver, req.Amount, req.ConfidenceScore)
+	log.Printf("RequestApproval called (Amount: %d, Confidence Score: %d)", req.Amount, req.ConfidenceScore)
 
 	requiredConfidence := len(s.peers) - 2
 
 	// verify if confidence score is sufficient
 	if int(req.ConfidenceScore) >= requiredConfidence {
-		log.Printf("Transaction approved by %s: Confidence score is sufficient (%d/%d)", s.name, req.ConfidenceScore, requiredConfidence)
+		log.Printf("Transaction approved: Confidence score is sufficient (%d/%d)", req.ConfidenceScore, requiredConfidence)
 		return &pbNode.ApprovalResponse{Approved: true}, nil
 	}
 
@@ -574,9 +575,8 @@ func (s *NodeServer) getPeerNameByAddress(address string) string {
 
 func StartNodeServer(config NodeConfig) {
 	time.Sleep(5 * time.Second)
-	cls := &chandyLamport.ChandyLamportServer{
-		NodeName: config.Name,
-	}
+	cls := chandyLamport.NewChandyLamportServer(config.Name)
+
 	lis, err := net.Listen("tcp", config.Address)
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
@@ -587,12 +587,15 @@ func StartNodeServer(config NodeConfig) {
 		log.Fatalf("Invalid initial balance: %v", err)
 	}
 
-	log.Printf("running unary interceptor...")
+	// call interceptor
 	grpcServer := grpc.NewServer(
 		grpc.UnaryInterceptor(cls.UnaryServerInterceptor()),
 	)
 
-	nodeServer := NewNodeServer(config.Name, int32(balance), config.RegistryAddress)
+	// creating node server
+	nodeServer := NewNodeServer(config.Name, int32(balance), config.RegistryAddress, cls)
+
+	// register node server
 	pbNode.RegisterNodeServer(grpcServer, nodeServer)
 	reflection.Register(grpcServer)
 
