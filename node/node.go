@@ -324,8 +324,6 @@ func (s *NodeServer) TransferMoney(ctx context.Context, req *pbNode.TransferRequ
 	}
 	defer conn.Close()
 
-	log.Printf("run is here")
-
 	// start Chandy-Lamport snapshot (this is the initiator process)
 	if !s.chandyLamportServer.SeenMarkers[s.chandyLamportServer.NodeName] {
 		// never seen the marker

@@ -3,13 +3,18 @@ package main
 import (
 	"SDCC/node"
 	"SDCC/node/configNode"
+	pbNode "SDCC/node/registry"
 	"SDCC/server_registry"
 	"flag"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 )
+
+import "context"
 
 func main() {
 	log.Printf("Arguments: %v", os.Args)
@@ -49,13 +54,12 @@ func main() {
 
 			node.StartNodeServer(config)
 		} else if *dockerFlag {
-			// Ottieni la configurazione dal file config.json per Docker
 			address, name, balance := configNode.DockerConfiguration()
 			if address == "" || name == "" || balance == "" {
 				log.Fatal("Docker configuration failed")
 			}
 
-			// Configurazione del nodo
+			// node configuration
 			config := node.NodeConfig{
 				Address:         address,
 				Name:            name,
@@ -63,8 +67,10 @@ func main() {
 				RegistryAddress: configNode.ServerAddress,
 			}
 
-			// Avvia il nodo con la configurazione ottenuta
+			// start node
 			node.StartNodeServer(config)
+
+			RunClientOnDocker()
 		}
 	default:
 		log.Fatalf("unknown mode: %s", mode)
@@ -75,4 +81,42 @@ func main() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	<-c
 	log.Println("Shutting down")
+}
+
+func RunClientOnDocker() {
+	sender := "peer-1"
+	receiver := "peer-3"
+	amount := 500
+
+	// registry address
+	// registryAddr := ":50051"
+
+	// connecting to node server
+	conn, err := grpc.Dial(":50052", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("Failed to connect: %v", err)
+	}
+	defer conn.Close()
+
+	client := pbNode.NewNodeClient(conn)
+
+	// setting transaction request
+	req := &pbNode.TransferRequest{
+		Sender:   sender,
+		Receiver: receiver,
+		Amount:   int32(amount),
+	}
+
+	// sending transaction
+	log.Printf("sending transfer request from %s to %s", req.Sender, req.Receiver)
+	resp, err := client.TransferMoney(context.Background(), req)
+	if err != nil {
+		log.Fatalf("Error during transfer: %v", err)
+	}
+
+	if resp.Success {
+		log.Println("amount successfully transfer")
+	} else {
+		log.Println("transaction failed")
+	}
 }

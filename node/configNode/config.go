@@ -43,35 +43,34 @@ type PeerConfig struct {
 }
 
 func DockerConfiguration() (string, string, string) {
-	// Leggi il file config.json
+	// read config.json
 	fileContent, err := os.ReadFile("/config.json")
 	if err != nil {
-		fmt.Println("Errore nella lettura del file:", err)
+		fmt.Println("read file error:", err)
 		return "", "", ""
 	}
 
-	// Parsing del JSON
+	// parsing JSON
 	var configData Config
 	err = json.Unmarshal(fileContent, &configData)
 	if err != nil {
-		fmt.Println("Errore nel parsing del file JSON:", err)
+		fmt.Println("error during parsing of JSON file:", err)
 		return "", "", ""
 	}
 
-	// Configura l'indirizzo del service registry
+	// setting registry address
 	ServerAddress = configData.Docker.ServiceRegistry.Address + configData.Docker.ServiceRegistry.Port
 
-	// Ottieni il nome del peer dalle variabili d'ambiente
+	// get peer name from environment variable
 	peerName := os.Getenv("PEER_NAME")
 	if peerName == "" {
-		fmt.Println("PEER_NAME non trovato")
+		fmt.Println("PEER_NAME not found")
 		return "", "", ""
 	}
 
-	// Stampa il nome del peer per debug
 	fmt.Printf("Peer rilevato: %s\n", peerName)
 
-	// Cerca nel file di configurazione il peer corrispondente al PEER_NAME
+	// check PEER_NAME in configuration file
 	for _, peer := range configData.Docker.Peers {
 		if peer.Address == peerName {
 			MyAddress = peer.Address + peer.Port
@@ -79,7 +78,7 @@ func DockerConfiguration() (string, string, string) {
 		}
 	}
 
-	fmt.Println("Peer non trovato nel file di configurazione")
+	fmt.Println("peer not found in configuration file")
 	return "", "", ""
 }
 

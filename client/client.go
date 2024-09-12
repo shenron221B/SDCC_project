@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"strconv"
 	"time"
 
 	pbNode "SDCC/node/registry"
@@ -70,9 +72,28 @@ func printAllNodeBalances(registryAddr string) {
 }
 
 func main() {
-	registryAddr := ":50051" // address of server registry
+	var sender, receiver string
+	var amount int
+	var err error
+
+	if len(os.Args) == 4 {
+		// parse command-line arguments
+		sender = os.Args[1]
+		receiver = os.Args[2]
+		amount, err = strconv.Atoi(os.Args[3])
+		if err != nil {
+			log.Fatalf("Invalid amount: %v", err)
+		}
+	} else {
+		log.Fatalf("usage: sender receiver amount")
+	}
+
+	registryAddr := ":50051"
+
+	// print all nodes balance to check the success of transaction
 	printAllNodeBalances(registryAddr)
-	// connection to node
+
+	// connect to sender
 	conn, err := grpc.Dial(":50052", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Failed to connect: %v", err)
@@ -80,24 +101,26 @@ func main() {
 	defer conn.Close()
 	client := pbNode.NewNodeClient(conn)
 
-	// create transfer request
+	// setting transaction request
 	req := &pbNode.TransferRequest{
-		Sender:   "peer-1",
-		Receiver: "peer-4",
-		Amount:   500,
+		Sender:   sender,
+		Receiver: receiver,
+		Amount:   int32(amount),
 	}
 
-	// send request
-	log.Printf("Sending transfer request from %s to %s", req.Sender, req.Receiver)
+	// sending transaction request
+	log.Printf("sending request from %s to %s", req.Sender, req.Receiver)
 	resp, err := client.TransferMoney(context.Background(), req)
 	if err != nil {
 		log.Fatalf("Error during transfer: %v", err)
 	}
 
 	if resp.Success {
-		log.Println("Transfer successful")
+		log.Println("amount successfully transferred")
 	} else {
-		log.Println("Transfer failed")
+		log.Println("transaction failed")
 	}
+
+	// reprint all nodes balance for check
 	printAllNodeBalances(registryAddr)
 }
