@@ -49,6 +49,7 @@ func main() {
 
 			node.StartNodeServer(config)
 		} else if *dockerFlag {
+			log.Printf("Docker environment")
 			address, name, balance := configNode.DockerConfiguration()
 			if address == "" || name == "" || balance == "" {
 				log.Fatal("Docker configuration failed")

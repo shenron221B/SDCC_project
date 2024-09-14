@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -72,28 +73,57 @@ func printAllNodeBalances(registryAddr string) {
 }
 
 func main() {
+	localhostFlag := flag.Bool("localhost", false, "if program run on localhost")
+	dockerFlag := flag.Bool("docker", false, "if program run on Docker")
+	flag.Parse()
+
+	registryAddr := ""
+
 	var sender, receiver string
 	var amount int
 	var err error
 
-	if len(os.Args) == 4 {
-		// parse command-line arguments
-		sender = os.Args[1]
-		receiver = os.Args[2]
-		amount, err = strconv.Atoi(os.Args[3])
-		if err != nil {
-			log.Fatalf("Invalid amount: %v", err)
+	if *dockerFlag {
+		log.Printf("Docker environment")
+
+		// read env variables
+		sender = os.Getenv("SENDER")
+		receiver = os.Getenv("RECEIVER")
+		amountStr := os.Getenv("AMOUNT")
+
+		if sender == "" || receiver == "" || amountStr == "" {
+			log.Fatalf("environment variables SENDER, RECEIVER and AMOUNT must be setting")
 		}
+
+		amount, err = strconv.Atoi(amountStr)
+		if err != nil {
+			log.Fatalf("amount not correct: %v", err)
+		}
+
+		registryAddr = "service_registry:50051"
+	} else if *localhostFlag {
+		log.Printf("running on localhost")
+
+		if len(os.Args) != 5 {
+			log.Fatalf("usage: client -localhost sender receiver amount")
+		}
+
+		sender = os.Args[2]
+		receiver = os.Args[3]
+		amount, err = strconv.Atoi(os.Args[4])
+		if err != nil {
+			log.Fatalf("amount not correct: %v", err)
+		}
+
+		registryAddr = ":50051"
 	} else {
-		log.Fatalf("usage: sender receiver amount")
+		log.Fatalf("mode error. Usage -docker or -localhost")
 	}
 
-	registryAddr := ":50051"
-
-	// print all nodes balance to check the success of transaction
+	// continue with client logic
 	printAllNodeBalances(registryAddr)
 
-	// connect to sender
+	// connect to the sender node
 	conn, err := grpc.Dial(":50052", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Failed to connect: %v", err)
@@ -101,26 +131,23 @@ func main() {
 	defer conn.Close()
 	client := pbNode.NewNodeClient(conn)
 
-	// setting transaction request
 	req := &pbNode.TransferRequest{
 		Sender:   sender,
 		Receiver: receiver,
 		Amount:   int32(amount),
 	}
 
-	// sending transaction request
-	log.Printf("sending request from %s to %s", req.Sender, req.Receiver)
+	log.Printf("Sending request from %s to %s", req.Sender, req.Receiver)
 	resp, err := client.TransferMoney(context.Background(), req)
 	if err != nil {
 		log.Fatalf("Error during transfer: %v", err)
 	}
 
 	if resp.Success {
-		log.Println("amount successfully transferred")
+		log.Println("Amount successfully transferred")
 	} else {
-		log.Println("transaction failed")
+		log.Println("Transaction failed")
 	}
 
-	// reprint all nodes balance for check
 	printAllNodeBalances(registryAddr)
 }

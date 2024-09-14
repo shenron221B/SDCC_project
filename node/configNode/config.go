@@ -43,6 +43,23 @@ type PeerConfig struct {
 }
 
 func DockerConfiguration() (string, string, string) {
+	// check for client configuration on Docker
+	clientRole := os.Getenv("ROLE")
+	if clientRole == "client" {
+		// read env variable
+		sender := os.Getenv("SENDER")
+		receiver := os.Getenv("RECEIVER")
+		amount := os.Getenv("AMOUNT")
+
+		if sender == "" || receiver == "" || amount == "" {
+			fmt.Println("Client environment variables SENDER, RECEIVER, or AMOUNT not set")
+			return "", "", ""
+		}
+
+		fmt.Printf("Client configuration successfull: sender=%s, receiver=%s, amount=%s\n", sender, receiver, amount)
+		return sender, receiver, amount
+	}
+
 	// read config.json
 	fileContent, err := os.ReadFile("/config.json")
 	if err != nil {

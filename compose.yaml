@@ -36,6 +36,7 @@ services:
       - "50053"
     depends_on:
       - service_registry
+      - peer-1
     volumes:
       - ./config.json:/config.json
     deploy:
@@ -53,6 +54,8 @@ services:
       - "50054"
     depends_on:
       - service_registry
+      - peer-1
+      - peer-2
     volumes:
       - ./config.json:/config.json
     deploy:

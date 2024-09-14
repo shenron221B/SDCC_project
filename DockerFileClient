@@ -13,7 +13,7 @@ RUN go mod download
 COPY ../node /SDCC/node
 COPY ../Chandy_Lamport /SDCC/Chandy_Lamport
 COPY ../server_registry /SDCC/server_registry
-COPY ../client /SDCC/client
+COPY ./client /SDCC/client
 COPY ../main.go /SDCC/
 COPY ../config.json /SDCC/config.json
 
@@ -21,6 +21,7 @@ COPY ../config.json /SDCC/config.json
 USER root
 RUN chmod -R +x /SDCC/node /SDCC/server_registry /SDCC/client
 RUN ls -l /SDCC/node /SDCC/server_registry /SDCC/client
+RUN ls -l /SDCC/client
 
 # Comando predefinito per avviare il client con variabili d'ambiente per sender, receiver e amount
-CMD ["sh", "-c", "go run client/client.go -docker $SENDER $RECEIVER $AMOUNT"]
+CMD ["sh", "-c", "go run client/client.go -docker"]
