@@ -16,13 +16,13 @@ services:
       - PEER_NAME=peer-1
       - PEER_BALANCE=1600
     ports:
-      - "50052"
+      - ":50052"
     depends_on:
       - service_registry
     volumes:
       - ./config.json:/config.json
     deploy:
-      replicas: 2
+      replicas: 1
 
   peer-2:
     build:
@@ -33,14 +33,14 @@ services:
       - PEER_NAME=peer-2
       - PEER_BALANCE=1200
     ports:
-      - "50053"
+      - ":50053"
     depends_on:
       - service_registry
       - peer-1
     volumes:
       - ./config.json:/config.json
     deploy:
-      replicas: 2
+      replicas: 1
 
   peer-3:
     build:
@@ -51,7 +51,7 @@ services:
       - PEER_NAME=peer-3
       - PEER_BALANCE=800
     ports:
-      - "50054"
+      - ":50054"
     depends_on:
       - service_registry
       - peer-1
@@ -59,7 +59,7 @@ services:
     volumes:
       - ./config.json:/config.json
     deploy:
-      replicas: 2
+      replicas: 1
 
   client:
     build:
@@ -71,6 +71,7 @@ services:
       - RECEIVER=peer-3
       - AMOUNT=500
     depends_on:
+      - service_registry
       - peer-1
       - peer-2
       - peer-3

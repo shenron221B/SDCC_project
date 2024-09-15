@@ -72,12 +72,48 @@ func printAllNodeBalances(registryAddr string) {
 	}
 }
 
+func getAllNodesWithRetry(registryAddr string) {
+	// Connect to the registry server
+	log.Println("Connecting to registry server...")
+	conn, err := grpc.Dial(registryAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("Failed to connect to registry: %v", err)
+	}
+	defer conn.Close()
+
+	registryClient := pbRegistry.NewRegistryClient(conn)
+
+	// Retry loop to wait until all nodes are registered
+	for {
+		// Set a timeout for the context
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		// Call GetAllNodes RPC
+		resp, err := registryClient.GetAllNodes(ctx, &pbRegistry.Empty{})
+		if err != nil {
+			log.Printf("Error retrieving nodes: %v", err)
+		} else if len(resp.Nodes) >= 3 {
+			// Exit loop once we have some nodes registered
+			log.Println("Successfully retrieved nodes from registry")
+			break
+		}
+
+		// If no nodes are returned or there's an error, retry after a short delay
+		log.Println("No nodes retrieved yet, retrying...")
+		time.Sleep(2 * time.Second)
+	}
+
+	return
+}
+
 func main() {
 	localhostFlag := flag.Bool("localhost", false, "if program run on localhost")
 	dockerFlag := flag.Bool("docker", false, "if program run on Docker")
 	flag.Parse()
 
 	registryAddr := ""
+	peerAddr := ""
 
 	var sender, receiver string
 	var amount int
@@ -101,6 +137,10 @@ func main() {
 		}
 
 		registryAddr = "service_registry:50051"
+		peerAddr = "peer-1:50052"
+
+		// wait that all nodes are registered to registry
+		getAllNodesWithRetry(registryAddr)
 	} else if *localhostFlag {
 		log.Printf("running on localhost")
 
@@ -116,6 +156,7 @@ func main() {
 		}
 
 		registryAddr = ":50051"
+		peerAddr = ":50052"
 	} else {
 		log.Fatalf("mode error. Usage -docker or -localhost")
 	}
@@ -124,7 +165,7 @@ func main() {
 	printAllNodeBalances(registryAddr)
 
 	// connect to the sender node
-	conn, err := grpc.Dial(":50052", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(peerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Failed to connect: %v", err)
 	}
@@ -149,5 +190,6 @@ func main() {
 		log.Println("Transaction failed")
 	}
 
+	// print balance again to verify the transaction
 	printAllNodeBalances(registryAddr)
 }
