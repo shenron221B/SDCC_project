@@ -1,4 +1,4 @@
-# Usa un'immagine di Go come base
+# Usa una immagine di Go come base
 FROM golang:latest
 
 # Imposta la directory di lavoro all'interno del container
@@ -17,11 +17,5 @@ COPY ./client /SDCC/client
 COPY ../main.go /SDCC/
 COPY ../config.json /SDCC/config.json
 
-# Imposta i permessi per i file necessari
-USER root
-RUN chmod -R +x /SDCC/node /SDCC/server_registry /SDCC/client
-RUN ls -l /SDCC/node /SDCC/server_registry /SDCC/client
-RUN ls -l /SDCC/client
-
-# Comando predefinito per avviare il client con variabili d'ambiente per sender, receiver e amount
+# Comando predefinito per avviare il client
 CMD ["sh", "-c", "go run client/client.go -docker"]

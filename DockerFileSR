@@ -17,9 +17,5 @@ COPY ../client /SDCC/client
 COPY ../main.go /SDCC/
 COPY ../config.json /SDCC/config.json
 
-USER root
-RUN chmod -R +x /SDCC/node /SDCC/server_registry /SDCC/client
-RUN ls -l /SDCC/node /SDCC/server_registry /SDCC/client
-
 # Comando predefinito per avviare il servizio registry
 CMD ["sh", "-c", "go run main.go -docker registry"]

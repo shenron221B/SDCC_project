@@ -72,6 +72,7 @@ func printAllNodeBalances(registryAddr string) {
 	}
 }
 
+// This function is used only for Docker running to wait that all nodes are registered on service registry
 func getAllNodesWithRetry(registryAddr string) {
 	// Connect to the registry server
 	log.Println("Connecting to registry server...")

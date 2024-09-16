@@ -347,8 +347,8 @@ func (s *NodeServer) TransferMoney(ctx context.Context, req *pbNode.TransferRequ
 		Amount:          req.Amount,
 		ConfidenceScore: int32(confidenceScore),
 	}
-
 	resp, err := client.VerifyTransaction(ctx, verificationReq)
+
 	if err != nil {
 		log.Printf("Failed to verify transaction with successor %s: %v", peerAddr, err)
 		return &pbNode.TransferResponse{Success: false, ConfidenceScore: 0}, nil
@@ -356,16 +356,6 @@ func (s *NodeServer) TransferMoney(ctx context.Context, req *pbNode.TransferRequ
 	time.Sleep(2000 * time.Millisecond)
 
 	confidenceScore = int(resp.ConfidenceScore)
-
-	/*
-		log.Printf("Transaction verified - confidence score: %d/%d", confidenceScore, len(s.peers)-2)
-
-		// no one node know the receiver -> cancel transaction
-		if confidenceScore == 0 {
-			log.Printf("Receiver unknown... transaction cancelled")
-			return &pbNode.TransferResponse{Success: false}, nil
-		}
-	*/
 
 	finalPeerAddr, ok := s.peers[req.Receiver]
 	if !ok || finalPeerAddr == "" {
@@ -425,9 +415,7 @@ func (s *NodeServer) UpdateBalance(ctx context.Context, req *pbNode.UpdateBalanc
 		s.chandyLamportServer.LocalState = "UpdateBalance - balance increase by " + strconv.Itoa(int(req.Amount)) + "$"
 		s.chandyLamportServer.Version[s.name]++
 		s.chandyLamportServer.SaveStateToFile()
-
 		s.SendMarkerToOutgoingChannels(s.name)
-
 	}
 
 	return &pbNode.UpdateBalanceResponse{Success: true}, nil
@@ -532,7 +520,7 @@ func (s *NodeServer) UpdatePeers(ctx context.Context, req *pbNode.NodeListRespon
 	}
 	sort.Strings(nodeNames)
 
-	// found successor and predecessor
+	// get successor and predecessor
 	for i, nodeName := range nodeNames {
 		if nodeName == s.name {
 			if i > 0 {
