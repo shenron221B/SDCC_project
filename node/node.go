@@ -546,19 +546,12 @@ func (s *NodeServer) UpdatePeers(ctx context.Context, req *pbNode.NodeListRespon
 	return &pbNode.Empty{}, nil
 }
 
-func (s *NodeServer) getPeerNameByAddress(address string) string {
-	for name, addr := range s.peers {
-		if addr == address {
-			return name
-		}
-	}
-	return ""
-}
-
 func StartNodeServer(config NodeConfig) {
 	time.Sleep(5 * time.Second)
+	// creating new Chandy-Lamport server instance
 	cls := chandyLamport.NewChandyLamportServer(config.Name)
 
+	// starting TCP listener
 	lis, err := net.Listen("tcp", config.Address)
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
@@ -569,15 +562,15 @@ func StartNodeServer(config NodeConfig) {
 		log.Fatalf("Invalid initial balance: %v", err)
 	}
 
-	// call interceptor
+	// creating unary interceptor to register gRPC calls
 	grpcServer := grpc.NewServer(
 		grpc.UnaryInterceptor(cls.UnaryServerInterceptor()),
 	)
 
-	// creating node server
+	// creating new node server instance
 	nodeServer := NewNodeServer(config.Name, int32(balance), config.RegistryAddress, cls)
 
-	// register node server
+	// registering node server on gRPC server
 	pbNode.RegisterNodeServer(grpcServer, nodeServer)
 	reflection.Register(grpcServer)
 
@@ -589,6 +582,7 @@ func StartNodeServer(config NodeConfig) {
 		}
 	}()
 
+	// connection to service registry
 	conn, err := grpc.Dial(configNode.ServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithTimeout(10*time.Second))
 	if err != nil {
 		log.Fatalf("Failed to connect to registry: %v", err)
@@ -596,6 +590,7 @@ func StartNodeServer(config NodeConfig) {
 
 	defer conn.Close()
 
+	// registering node to service registry
 	registryClient := pbRegistry.NewRegistryClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -614,5 +609,4 @@ func StartNodeServer(config NodeConfig) {
 		}
 	}()
 	*/
-
 }

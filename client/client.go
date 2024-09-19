@@ -165,7 +165,7 @@ func main() {
 	// continue with client logic
 	printAllNodeBalances(registryAddr)
 
-	// connect to the sender node
+	// connection to the sender node
 	conn, err := grpc.Dial(peerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Failed to connect: %v", err)
