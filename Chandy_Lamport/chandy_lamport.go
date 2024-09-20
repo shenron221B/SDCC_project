@@ -107,7 +107,7 @@ func (cls *ChandyLamportServer) RecordChannelState(node, operation string) {
 	defer file.Close()
 
 	file.WriteString(fmt.Sprintf("%s\n\n", state))
-	log.Printf("Recorded channel state to file: %s", state)
+	// log.Printf("Recorded channel state to file: %s", state)
 }
 
 func (cls *ChandyLamportServer) SaveStateToFile() {
@@ -123,5 +123,5 @@ func (cls *ChandyLamportServer) SaveStateToFile() {
 	file.WriteString(fmt.Sprintf("Version: %d\n", cls.Version[cls.NodeName]))
 	file.WriteString(fmt.Sprintf("\n"))
 
-	log.Printf("State saved to %s", filename)
+	// log.Printf("State saved to %s", filename)
 }

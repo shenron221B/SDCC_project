@@ -54,7 +54,7 @@ func NewNodeServer(name string, balance int32, registryAddress string, cls *chan
 }
 
 func (s *NodeServer) VerifyTransaction(ctx context.Context, req *pbNode.TransactionVerificationRequest) (*pbNode.TransactionVerificationResponse, error) {
-	log.Printf("VerifyTransaction called on %s...", s.name)
+	// log.Printf("VerifyTransaction called on %s...", s.name)
 	time.Sleep(2 * time.Second)
 
 	// verify if the node must be record its state
@@ -84,7 +84,7 @@ func (s *NodeServer) VerifyTransaction(ctx context.Context, req *pbNode.Transact
 			s.SendMarkerToOutgoingChannels(s.name)
 		}
 
-		log.Printf("%s calls AnotherVerification on successor: %s", s.name, s.successor)
+		log.Printf("%s calls AnotherVerification on: %s", s.name, s.successor)
 
 		// search the address of successor
 		successorAddr, exists := s.peers[s.successor]
@@ -179,7 +179,7 @@ func (s *NodeServer) VerifyTransaction(ctx context.Context, req *pbNode.Transact
 }
 
 func (s *NodeServer) AnotherVerification(ctx context.Context, req *pbNode.TransactionVerificationRequest) (*pbNode.TransactionVerificationResponse, error) {
-	log.Printf("AnotherVerification called on node %s...", s.name)
+	// log.Printf("AnotherVerification called on node %s...", s.name)
 
 	// verify if the node must be record its state
 	if s.chandyLamportServer.SeenMarkerForTheFirstTime[s.name] {
@@ -190,15 +190,11 @@ func (s *NodeServer) AnotherVerification(ctx context.Context, req *pbNode.Transa
 		s.SendMarkerToOutgoingChannels(s.name)
 	}
 
-	log.Printf("AnotherVerification -> expected value passed from VerifyTransaction of the confidence score: 1 - actial value: %d", req.ConfidenceScore)
-
 	// verify if this node knows the receiver
 	if _, known := s.peers[req.TargetNode]; known {
 		req.ConfidenceScore++
 		log.Printf("%s knows the target node: %s", s.name, req.TargetNode)
 	}
-
-	log.Printf("AnotherVerification -> expected value of updated confidence score: 2 - actual value: %d", req.ConfidenceScore)
 
 	// check if exist a successor that it's not the receiver
 	if s.successor != "" && s.successor != req.TargetNode {
@@ -211,7 +207,7 @@ func (s *NodeServer) AnotherVerification(ctx context.Context, req *pbNode.Transa
 			s.chandyLamportServer.SaveStateToFile()
 		}
 
-		log.Printf("%s calls AnotherVerification on successor: %s", s.name, s.successor)
+		log.Printf("%s calls AnotherVerification on: %s", s.name, s.successor)
 		peerAddr := s.peers[s.successor]
 		conn, err := grpc.Dial(peerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
@@ -255,7 +251,6 @@ func (s *NodeServer) AnotherVerification(ctx context.Context, req *pbNode.Transa
 		}
 
 		if req.ConfidenceScore == int32(len(s.peers)-1) {
-			log.Printf("AnotherVerification -> expected value of the confidence score before send the amount: 2 - actual value: %d", req.ConfidenceScore)
 			finalPeerAddr, ok := s.peers[req.TargetNode]
 			if ok {
 				conn, err := grpc.DialContext(ctx, finalPeerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -388,7 +383,7 @@ func (s *NodeServer) TransferMoney(ctx context.Context, req *pbNode.TransferRequ
 }
 
 func (s *NodeServer) RequestApproval(ctx context.Context, req *pbNode.ApprovalRequest) (*pbNode.ApprovalResponse, error) {
-	log.Printf("RequestApproval called (Amount: %d, Confidence Score: %d)", req.Amount, req.ConfidenceScore)
+	// log.Printf("RequestApproval called (Amount: %d, Confidence Score: %d)", req.Amount, req.ConfidenceScore)
 
 	requiredConfidence := len(s.peers) - 2
 
