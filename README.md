@@ -75,25 +75,21 @@ sudo docker-compose -f compose.yaml up
 ## Docker - comandi utili
 
 Listare i container attivi:
-eseguire il Docker deamon:
 ```bash
 sudo docker ps
 ```
 
 Stop di un container:
-eseguire il Docker deamon:
 ```bash
 sudo docker kill <container_ID>
 ```
 
 Riavviare un container:
-eseguire il Docker deamon:
 ```bash
 sudo docker restart <container_ID>
 ```
 
 Rimuovere tutte le immagini:
-eseguire il Docker deamon:
 ```bash
 sudo docker rmi $(sudo docker images -a -q)
 ```
