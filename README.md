@@ -7,7 +7,7 @@ L'algoritmo funziona sotto determinate assunzioni:
 - comunicazione affidabile;
 - canali FIFO unidirezionali;
 - l'esecuzione dell'algoritmo non influisce su quella dell'applicazione;
-- ogni nodo può avviare la registrazione (anche puù di uno).
+- ogni nodo può avviare la registrazione (anche più di uno).
 
 ## Funzionamento dell'algoritmo
 Il processo che inizia l'algoritmo (uno o più):
