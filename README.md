@@ -37,7 +37,7 @@ e successivamente avviare i container tramite:
 docker-compose -f compose.yaml up
 ```
 
-## Istanza EC2
+## Esecuzione su istanza EC2
 Per eseguire il codice tramite un'istanza EC2, occorre innanzitutto connettersi all'istanza tramite SSH sulla PowerShell:
 ```bash
 ssh -i <path_to_pem> ec2-user@<ip_EC2_istance>
