@@ -63,6 +63,7 @@ sudo service docekr start
 istallare git e clonare la repository:
 ```bash
 sudo yum install git -y
+git clone https://github.com/shenron221B/SDCC_project.git
 ```
 
 eseguire Docker Compose:
